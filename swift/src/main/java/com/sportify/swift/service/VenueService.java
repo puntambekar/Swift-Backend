@@ -1,11 +1,9 @@
 package com.sportify.swift.service;
 
 import com.mongodb.client.*;
-import com.sportify.swift.dao.VenueListRepository;
 import com.sportify.swift.dao.VenueRepository;
 import com.sportify.swift.entity.Availability;
 import com.sportify.swift.entity.Venue;
-import com.sportify.swift.entity.VenueList;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,8 +22,7 @@ public class VenueService {
 
     @Autowired
     VenueRepository venueRepository;
-    @Autowired
-    VenueListRepository venueListRepository;
+
 
     @Value("${spring.data.mongodb.uri}")
     String mongoConnectionString;
@@ -108,5 +105,18 @@ public class VenueService {
 
     public Venue getAVenue(String venueId) {
         return venueRepository.findById(venueId).get();
+    }
+
+    //get availability of a venue on a particular day
+    public List<Availability.DailyAvailability.HourlyAvailability> getVenueAvailabilityForDay(String venueId, String dateString){
+
+
+        LocalDate localDate = LocalDate.parse(dateString);
+        Venue venue= venueRepository.findById(venueId).get();
+
+        Optional<Availability.DailyAvailability> data = venue.getAvailability().getDailyAvailability().stream().filter(e -> e.getDate() .isEqual(localDate) ).findFirst();
+
+
+        return data.get().getHourlyAvailability();
     }
 }

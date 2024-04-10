@@ -1,10 +1,10 @@
 package com.sportify.swift.controller;
 
+import com.sportify.swift.entity.Availability;
 import com.sportify.swift.entity.Venue;
 import com.sportify.swift.service.VenueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,17 +37,10 @@ public class VenueController {
     public List<String> getAllVenuesinList(){
        return venueService.getAllVenuesinList();
     }
-//
-//    @PostMapping(value = "/venues/list/create")
-//    public HttpStatus createNewVenueList(@RequestBody List<String> venues){
-//        venueService.createNewVenueList(venues);
-//        return HttpStatus.CREATED;
-//    }
-//
-//    @PutMapping("/venues/list/add")
-//    public HttpStatus addNewVenue(@RequestParam String venueName){
-//        venueService.addNewVenueinList(venueName);
-//        return HttpStatus.CREATED;
-//    }
+
+ @GetMapping("/venues/dailyAvail")
+    public List<Availability.DailyAvailability.HourlyAvailability>  getVenueAvailabilityForDay(String venueId, String date){
+        return venueService.getVenueAvailabilityForDay(venueId,date);
+    }
 
 }
