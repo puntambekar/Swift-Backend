@@ -119,4 +119,8 @@ public class VenueService {
 
         return data.get().getHourlyAvailability();
     }
+
+    public void save(Venue venue) {
+        venueRepository.save(venue);
+    }
 }
