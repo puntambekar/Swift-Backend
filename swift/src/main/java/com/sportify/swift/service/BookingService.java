@@ -3,20 +3,22 @@ package com.sportify.swift.service;
 import com.sportify.swift.dao.BookingRepository;
 import com.sportify.swift.entity.Availability;
 import com.sportify.swift.entity.Booking;
-import com.sportify.swift.entity.User;
 import com.sportify.swift.entity.Venue;
 import com.sportify.swift.requestmodel.BookingRequest;
 import com.sportify.swift.requestmodel.TimeSlot;
+import com.sportify.swift.responsemodel.BookingEventResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.awt.print.Book;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
-import java.util.TimeZone;
 
 @Service
 public class BookingService {
@@ -84,13 +86,14 @@ public class BookingService {
     private void sendEmailToUser(Booking booking) {
 
         String userEmail = booking.getUser().getEmail();
-        String subject = "Your Booking at "+booking.getVenue().getBusinessName();
-        String text = generateConfirmationMessage(booking);
+        String subject = "Your Booking at " + booking.getVenue().getBusinessName();
+        String text = generateConfirmationMessageHTML(booking);
 
 
-        emailService.sendEmail(userEmail,subject,text);
+        emailService.sendEmail(userEmail, subject, text);
 
     }
+
     public String generateConfirmationMessage(Booking booking) {
         StringBuilder message = new StringBuilder();
         message.append("Booking Confirmation\n\n");
@@ -111,12 +114,47 @@ public class BookingService {
         return message.toString();
     }
 
-    private Date  dateFormatter(String dateString) throws ParseException {
+    public String generateConfirmationMessageHTML(Booking booking) {
+        StringBuilder htmlContent = new StringBuilder();
+        htmlContent.append("<html><head><style>");
+        htmlContent.append("body { font-family: Arial, sans-serif; margin: 0; padding: 0;}");
+        htmlContent.append(".header { background-color: #007bff; color: #fff; padding: 20px; text-align: center;}");
+        htmlContent.append(".footer { background-color: #f8f9fa; color: #333; padding: 20px; text-align: center;}");
+        htmlContent.append("</style></head><body>");
+        htmlContent.append("<div class=\"header\"><h1>Booking Confirmation</h1></div>");
+        htmlContent.append("<div><img src=\"https://example.com/your-logo.png\" alt=\"Logo\" style=\"display: block; margin: 0 auto; max-width: 100%; height: auto;\"></div>");
+        htmlContent.append("<div>");
+        htmlContent.append("<p><strong>Booking ID:</strong> ").append(booking.getId()).append("</p>");
+        htmlContent.append("<p><strong>Date:</strong> ").append(booking.getDate()).append("</p>");
+        htmlContent.append("<h3>Time Slots:</h3>");
+        htmlContent.append("<ul>");
+        for (TimeSlot slot : booking.getTimeSlots()) {
+            htmlContent.append("<li>").append(slot.getTime()).append(": ").append(slot.getCourtBooked()).append(" courts</li>");
+        }
+        htmlContent.append("</ul>");
+        htmlContent.append("<h3>User Information:</h3>");
+        htmlContent.append("<ul>");
+        htmlContent.append("<li><strong>Name:</strong> ").append(booking.getUser().getName()).append("</li>");
+        htmlContent.append("<li><strong>Email:</strong> ").append(booking.getUser().getEmail()).append("</li>");
+        htmlContent.append("<li><strong>Phone:</strong> ").append(booking.getUser().getPhone()).append("</li>");
+        htmlContent.append("</ul>");
+        htmlContent.append("<h3>Venue Information:</h3>");
+        htmlContent.append("<ul>");
+        htmlContent.append("<li><strong>Business Name:</strong> ").append(booking.getVenue().getBusinessName()).append("</li>");
+        htmlContent.append("<li><strong>Address:</strong> ").append(booking.getVenue().getAddress()).append(", ").append(booking.getVenue().getCity()).append("</li>");
+        htmlContent.append("</ul>");
+        htmlContent.append("</div>");
+        htmlContent.append("<div class=\"footer\"><p>Thank you for choosing our service!</p></div>");
+        htmlContent.append("</body></html>");
+        return htmlContent.toString();
+    }
+
+
+    private Date dateFormatter(String dateString) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
 
-
-            Date date = dateFormat.parse(dateString);
+        Date date = dateFormat.parse(dateString);
 
 //            System.out.println("Parsed Date: " + date);
 //
@@ -132,5 +170,35 @@ public class BookingService {
 
 
         return date;
+    }
+
+    public List<BookingEventResponse> getAllBookings() {
+        List<Booking> bookings = bookingRepository.findAll();
+        List<BookingEventResponse> bookingEventResponses = new ArrayList<>();
+        for (Booking booking : bookings) {
+            for (TimeSlot timeSlot : booking.getTimeSlots()) {
+              for(int i=0;i<Integer.parseInt(timeSlot.getCourtBooked());i++){
+                  BookingEventResponse bookingEventResponse = new BookingEventResponse();
+                  bookingEventResponse.setId(booking.getId());
+                  bookingEventResponse.setTitle(booking.getUser().getEmail());
+                  bookingEventResponse.setStart(formattedTime(timeSlot.getTime()));
+                  bookingEventResponse.setEnd(formattedTime(timeSlot.getTime()).plusHours(1));
+                  bookingEventResponses.add(bookingEventResponse);
+              }
+
+               // bookingEventResponse.setSlotsBooked(Integer.parseInt(timeSlot.getCourtBooked()));
+            //    bookingEventResponse.setSlotsEmpty(bookingEventResponse.getSlotsEmpty()-bookingEventResponse.getSlotsBooked());
+
+
+            }
+        }
+        return bookingEventResponses;
+    }
+
+    private ZonedDateTime formattedTime(String time) {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+        ZonedDateTime zonedDateTime = ZonedDateTime.parse(time, formatter);
+        return zonedDateTime;
     }
 }

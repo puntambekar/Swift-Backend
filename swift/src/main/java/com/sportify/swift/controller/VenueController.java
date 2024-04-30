@@ -22,7 +22,7 @@ public class VenueController {
         return HttpStatus.CREATED;
     }
 
-    @GetMapping("/venues")
+    @GetMapping("/secure/venues")
     public List<Venue> getAllVenues(){
         return venueService.getAllVenues();
     }
