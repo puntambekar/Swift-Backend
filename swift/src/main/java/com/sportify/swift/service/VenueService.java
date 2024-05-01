@@ -27,35 +27,6 @@ public class VenueService {
     @Value("${spring.data.mongodb.uri}")
     String mongoConnectionString;
 
-    public List<String> getAllVenuesinList() {
-        List<String> businessNames = new ArrayList<>();
-       // return venueListRepository.findById(0).get().getVenueList();
-        try(MongoClient mongoClient = MongoClients.create(mongoConnectionString)){
-            MongoDatabase db = mongoClient.getDatabase("swift");
-            MongoCollection<Document> collection = db.getCollection("venue");
-            DistinctIterable<String> distinctIterable = collection.distinct("businessName", String.class);
-
-            for(String businessName:distinctIterable){
-                businessNames.add(businessName);
-            }
-        }
-        return businessNames;
-    }
-
-//    public List<String> addNewVenueinList(String newVenue) {
-//        Optional<VenueList> venueList = venueListRepository.findById(1);
-//        venueList.get().getVenueList().add(newVenue);
-//
-//
-//        return venueListRepository.save(venueList.get()).getVenueList();
-//    }
-//
-//    public void createNewVenueList(List<String> venues) {
-//        VenueList venueList = new VenueList();
-//        venueList.setVenueList(venues);
-//        venueListRepository.save(venueList);
-//    }
-
     public void addNewVenue(Venue newVenue) {
         Venue venue = new Venue();
         venue.setBusinessName(newVenue.getBusinessName());
@@ -69,13 +40,13 @@ public class VenueService {
 
         Availability availability = new Availability();
         availability.setYear(2024);
-        availability.setMonth(4);
+        availability.setMonth(5);
 
         List<Availability.DailyAvailability> dailyAvailabilities = new ArrayList<>();
 
-        LocalDate startDate = LocalDate.parse("2024-04-01");
+        LocalDate startDate = LocalDate.parse("2024-05-01");
 
-        LocalDate endDate = startDate.plusDays(29);
+        LocalDate endDate = startDate.plusDays(30);
 
         for (LocalDate date = startDate; date.isBefore(endDate.plusDays(1)); date = date.plusDays(1)) {
             Availability.DailyAvailability dailyAvailability = new Availability.DailyAvailability();
@@ -97,14 +68,14 @@ public class VenueService {
 
     }
 
-    public List<Venue> getAllVenues() {
 
-       return venueRepository.findAll();
-    }
-
-
-    public Venue getAVenue(String venueId) {
-        return venueRepository.findById(venueId).get();
+    public Venue getVenueDetails() {
+        List<Venue> venues = venueRepository.findAll();
+        if (!venues.isEmpty()) {
+            return venues.get(0); // Return the first venue if available
+        } else {
+            return null; // Return null if no venue found
+        }
     }
 
     //get availability of a venue on a particular day

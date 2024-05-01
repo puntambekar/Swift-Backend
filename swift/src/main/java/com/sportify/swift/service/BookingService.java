@@ -38,7 +38,7 @@ public class BookingService {
 
 
 
-        Venue venue = venueService.getAVenue(bookingRequest.getVenue().getId());
+        Venue venue = venueService.getVenueDetails();
 
         if (venue != null) {
             Optional<Availability.DailyAvailability> data = venue.getAvailability().getDailyAvailability().stream()

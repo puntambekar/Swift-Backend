@@ -22,21 +22,11 @@ public class VenueController {
         return HttpStatus.CREATED;
     }
 
-    @GetMapping("/secure/venues")
-    public List<Venue> getAllVenues(){
-        return venueService.getAllVenues();
-    }
-
     @GetMapping("/venues/details")
-    public Venue getAVenue(@RequestParam String venueId){
-        return venueService.getAVenue(venueId);
+    public Venue getVenueDetails(){
+        return venueService.getVenueDetails();
     }
 
-
-    @GetMapping("/venues/list")
-    public List<String> getAllVenuesinList(){
-       return venueService.getAllVenuesinList();
-    }
 
  @GetMapping("/venues/dailyAvail")
     public List<Availability.DailyAvailability.HourlyAvailability>  getVenueAvailabilityForDay(String venueId, String date){
