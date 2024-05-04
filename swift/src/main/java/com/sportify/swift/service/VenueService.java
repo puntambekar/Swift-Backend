@@ -24,9 +24,6 @@ public class VenueService {
     VenueRepository venueRepository;
 
 
-    @Value("${spring.data.mongodb.uri}")
-    String mongoConnectionString;
-
     public void addNewVenue(Venue newVenue) {
         Venue venue = new Venue();
         venue.setBusinessName(newVenue.getBusinessName());

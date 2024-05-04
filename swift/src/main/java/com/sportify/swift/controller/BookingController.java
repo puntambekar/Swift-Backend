@@ -27,8 +27,19 @@ public class BookingController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/cancel")
+    public ResponseEntity<Void> cancelBooking(@RequestBody String bookingId) {
+        bookingService.cancelBooking(bookingId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/slots")
+    public List<BookingEventResponse> getAllBookingsBySlots(){
+        return bookingService.getAllBookingsBySlots();
+    }
+
     @GetMapping("/list")
-    public List<BookingEventResponse> getAllBookings(){
+    public List<Booking> getAllBookings(){
         return bookingService.getAllBookings();
     }
 }

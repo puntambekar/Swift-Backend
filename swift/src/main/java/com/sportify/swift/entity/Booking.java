@@ -21,4 +21,5 @@ public class Booking {
     private List<TimeSlot> timeSlots;
     private User user;
     private Venue venue;
+    private String status;
 }

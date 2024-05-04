@@ -7,16 +7,15 @@ import com.sportify.swift.entity.Venue;
 import com.sportify.swift.requestmodel.BookingRequest;
 import com.sportify.swift.requestmodel.TimeSlot;
 import com.sportify.swift.responsemodel.BookingEventResponse;
+import com.sportify.swift.utils.Constants;
+import com.sportify.swift.utils.DateUtils;
+import com.sportify.swift.utils.EmailUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,12 +29,12 @@ public class BookingService {
     VenueService venueService;
 
     @Autowired
-    EmailService emailService;
+    EmailUtils emailUtils;
+
 
     public void addNewBooking(BookingRequest bookingRequest) {
 
         LocalDate localDate = LocalDate.parse(bookingRequest.getDate());
-
 
 
         Venue venue = venueService.getVenueDetails();
@@ -50,7 +49,7 @@ public class BookingService {
                     Optional<Availability.DailyAvailability.HourlyAvailability> hourlyAvailability = dailyAvailability.getHourlyAvailability().stream()
                             .filter(item -> {
                                 try {
-                                    return item.getTime().equals(dateFormatter(timeSlot.getTime()));
+                                    return item.getTime().equals(DateUtils.dateFormatter(timeSlot.getTime()));
                                 } catch (ParseException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -71,123 +70,30 @@ public class BookingService {
         booking.setTimeSlots(bookingRequest.getTimeSlots());
         booking.setUser(bookingRequest.getUser());
         booking.setVenue(bookingRequest.getVenue());
-
-
-
+        booking.setStatus(Constants.BOOKING_STATUS_ACTIVE);
 
         bookingRepository.save(booking);
-
-        sendEmailToUser(booking);
-
-    }
-
-
-
-    private void sendEmailToUser(Booking booking) {
-
-        String userEmail = booking.getUser().getEmail();
-        String subject = "Your Booking at " + booking.getVenue().getBusinessName();
-        String text = generateConfirmationMessageHTML(booking);
-
-
-        emailService.sendEmail(userEmail, subject, text);
+        emailUtils.sendEmailToUser(booking);
 
     }
 
-    public String generateConfirmationMessage(Booking booking) {
-        StringBuilder message = new StringBuilder();
-        message.append("Booking Confirmation\n\n");
-        message.append("Booking ID: ").append(booking.getId()).append("\n");
-        message.append("Date: ").append(booking.getDate()).append("\n");
-        message.append("Time Slots:\n");
-        for (TimeSlot slot : booking.getTimeSlots()) {
-            message.append("- ").append(slot.getTime()).append(": ").append(slot.getCourtBooked()).append(" courts\n");
-        }
-        message.append("\n");
-        message.append("User Information:\n");
-        message.append("- Name: ").append(booking.getUser().getName()).append("\n");
-        message.append("- Email: ").append(booking.getUser().getEmail()).append("\n");
-        message.append("- Phone: ").append(booking.getUser().getPhone()).append("\n\n");
-        message.append("Venue Information:\n");
-        message.append("- Business Name: ").append(booking.getVenue().getBusinessName()).append("\n");
-        message.append("- Address: ").append(booking.getVenue().getAddress()).append(", ").append(booking.getVenue().getCity()).append("\n");
-        return message.toString();
-    }
 
-    public String generateConfirmationMessageHTML(Booking booking) {
-        StringBuilder htmlContent = new StringBuilder();
-        htmlContent.append("<html><head><style>");
-        htmlContent.append("body { font-family: Arial, sans-serif; margin: 0; padding: 0;}");
-        htmlContent.append(".header { background-color: #007bff; color: #fff; padding: 20px; text-align: center;}");
-        htmlContent.append(".footer { background-color: #f8f9fa; color: #333; padding: 20px; text-align: center;}");
-        htmlContent.append("</style></head><body>");
-        htmlContent.append("<div class=\"header\"><h1>Booking Confirmation</h1></div>");
-        htmlContent.append("<div><img src=\"https://example.com/your-logo.png\" alt=\"Logo\" style=\"display: block; margin: 0 auto; max-width: 100%; height: auto;\"></div>");
-        htmlContent.append("<div>");
-        htmlContent.append("<p><strong>Booking ID:</strong> ").append(booking.getId()).append("</p>");
-        htmlContent.append("<p><strong>Date:</strong> ").append(booking.getDate()).append("</p>");
-        htmlContent.append("<h3>Time Slots:</h3>");
-        htmlContent.append("<ul>");
-        for (TimeSlot slot : booking.getTimeSlots()) {
-            htmlContent.append("<li>").append(slot.getTime()).append(": ").append(slot.getCourtBooked()).append(" courts</li>");
-        }
-        htmlContent.append("</ul>");
-        htmlContent.append("<h3>User Information:</h3>");
-        htmlContent.append("<ul>");
-        htmlContent.append("<li><strong>Name:</strong> ").append(booking.getUser().getName()).append("</li>");
-        htmlContent.append("<li><strong>Email:</strong> ").append(booking.getUser().getEmail()).append("</li>");
-        htmlContent.append("<li><strong>Phone:</strong> ").append(booking.getUser().getPhone()).append("</li>");
-        htmlContent.append("</ul>");
-        htmlContent.append("<h3>Venue Information:</h3>");
-        htmlContent.append("<ul>");
-        htmlContent.append("<li><strong>Business Name:</strong> ").append(booking.getVenue().getBusinessName()).append("</li>");
-        htmlContent.append("<li><strong>Address:</strong> ").append(booking.getVenue().getAddress()).append(", ").append(booking.getVenue().getCity()).append("</li>");
-        htmlContent.append("</ul>");
-        htmlContent.append("</div>");
-        htmlContent.append("<div class=\"footer\"><p>Thank you for choosing our service!</p></div>");
-        htmlContent.append("</body></html>");
-        return htmlContent.toString();
-    }
-
-
-    private Date dateFormatter(String dateString) throws ParseException {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-
-
-        Date date = dateFormat.parse(dateString);
-
-//            System.out.println("Parsed Date: " + date);
-//
-//            // Get the Eastern Daylight Time (EDT) timezone
-//            TimeZone edtTimeZone = TimeZone.getTimeZone("America/New_York");
-//
-//            // Set the time zone of the date object to EDT
-//            dateFormat.setTimeZone(edtTimeZone);
-//            String edtDate = dateFormat.format(date);
-//
-//            // Print the date in EDT
-//            System.out.println("Date and Time in EDT: " + edtDate);
-
-
-        return date;
-    }
-
-    public List<BookingEventResponse> getAllBookings() {
+    public List<BookingEventResponse> getAllBookingsBySlots() {
         List<Booking> bookings = bookingRepository.findAll();
         List<BookingEventResponse> bookingEventResponses = new ArrayList<>();
         for (Booking booking : bookings) {
             for (TimeSlot timeSlot : booking.getTimeSlots()) {
-              for(int i=0;i<Integer.parseInt(timeSlot.getCourtBooked());i++){
-                  BookingEventResponse bookingEventResponse = new BookingEventResponse();
-                  bookingEventResponse.setId(booking.getId());
-                  bookingEventResponse.setTitle(booking.getUser().getEmail());
-                  bookingEventResponse.setStart(formattedTime(timeSlot.getTime()));
-                  bookingEventResponse.setEnd(formattedTime(timeSlot.getTime()).plusHours(1));
-                  bookingEventResponses.add(bookingEventResponse);
-              }
+                for (int i = 0; i < Integer.parseInt(timeSlot.getCourtBooked()); i++) {
+                    BookingEventResponse bookingEventResponse = new BookingEventResponse();
+                    bookingEventResponse.setId(booking.getId());
+                    bookingEventResponse.setTitle(booking.getUser().getEmail());
+                    bookingEventResponse.setStart(DateUtils.formattedTime(timeSlot.getTime()));
+                    bookingEventResponse.setEnd(DateUtils.formattedTime(timeSlot.getTime()).plusHours(1));
+                    bookingEventResponses.add(bookingEventResponse);
+                }
 
-               // bookingEventResponse.setSlotsBooked(Integer.parseInt(timeSlot.getCourtBooked()));
-            //    bookingEventResponse.setSlotsEmpty(bookingEventResponse.getSlotsEmpty()-bookingEventResponse.getSlotsBooked());
+                // bookingEventResponse.setSlotsBooked(Integer.parseInt(timeSlot.getCourtBooked()));
+                //    bookingEventResponse.setSlotsEmpty(bookingEventResponse.getSlotsEmpty()-bookingEventResponse.getSlotsBooked());
 
 
             }
@@ -195,10 +101,52 @@ public class BookingService {
         return bookingEventResponses;
     }
 
-    private ZonedDateTime formattedTime(String time) {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-        ZonedDateTime zonedDateTime = ZonedDateTime.parse(time, formatter);
-        return zonedDateTime;
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
     }
+
+    public void cancelBooking(String bookingId) {
+
+        Venue venue = venueService.getVenueDetails();
+        Optional<Booking> booking = bookingRepository.findById(bookingId);
+
+        LocalDate localDate = LocalDate.parse(booking.get().getDate());
+
+
+        if (venue != null) {
+            Optional<Availability.DailyAvailability> data = venue.getAvailability().getDailyAvailability().stream()
+                    .filter(e -> e.getDate().isEqual(localDate))
+                    .findFirst();
+
+            data.ifPresent(dailyAvailability -> {
+                for (TimeSlot timeSlot : booking.get().getTimeSlots()) {
+                    Optional<Availability.DailyAvailability.HourlyAvailability> hourlyAvailability = dailyAvailability.getHourlyAvailability().stream()
+                            .filter(item -> {
+                                try {
+                                    return item.getTime().equals(DateUtils.dateFormatter(timeSlot.getTime()));
+                                } catch (ParseException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .findFirst();
+
+                    hourlyAvailability.ifPresent(availability -> {
+                        availability.setCourtAvailable(availability.getCourtAvailable() + Integer.parseInt(timeSlot.getCourtBooked()));
+                    });
+                }
+            });
+
+            venueService.save(venue);
+
+            booking.get().setStatus(Constants.BOOKING_STATUS_CANCELED_BY_ADMIN);
+
+            bookingRepository.save(booking.get());
+
+            emailUtils.sendEmailToUser(booking.get());
+
+
+        }
+    }
+
 }

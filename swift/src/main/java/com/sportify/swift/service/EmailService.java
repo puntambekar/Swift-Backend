@@ -17,14 +17,7 @@ public class EmailService {
 
     public void sendEmail(String to, String subject, String htmlContent) {
 
-//        SimpleMailMessage message = new SimpleMailMessage();
-//        message.setFrom("koohi.bhagya@gmail.com");
-//        message.setTo(to);
-//        message.setSubject(subject);
-//        message.setText(text);
-
         MimeMessage message = mailSender.createMimeMessage();
-
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
