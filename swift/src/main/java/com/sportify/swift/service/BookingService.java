@@ -1,5 +1,6 @@
 package com.sportify.swift.service;
 
+import com.sportify.swift.dao.AvailabilityRepository;
 import com.sportify.swift.dao.BookingRepository;
 import com.sportify.swift.entity.Availability;
 import com.sportify.swift.entity.Booking;
@@ -31,16 +32,19 @@ public class BookingService {
     @Autowired
     EmailUtils emailUtils;
 
+    @Autowired
+    AvailabilityRepository availabilityRepository;
+
 
     public void addNewBooking(BookingRequest bookingRequest) {
 
         LocalDate localDate = LocalDate.parse(bookingRequest.getDate());
 
+        Availability availabilityByMonth = availabilityRepository.findByYearAndMonth(localDate.getYear(),localDate.getMonthValue());
 
-        Venue venue = venueService.getVenueDetails();
 
-        if (venue != null) {
-            Optional<Availability.DailyAvailability> data = venue.getAvailability().getDailyAvailability().stream()
+        if (availabilityByMonth != null) {
+            Optional<Availability.DailyAvailability> data = availabilityByMonth.getDailyAvailability().stream()
                     .filter(e -> e.getDate().isEqual(localDate))
                     .findFirst();
 
@@ -62,7 +66,7 @@ public class BookingService {
                 }
             });
 
-            venueService.save(venue);
+            availabilityRepository.save(availabilityByMonth);
         }
 
         Booking booking = new Booking();
@@ -106,16 +110,21 @@ public class BookingService {
         return bookingRepository.findAll();
     }
 
-    public void cancelBooking(String bookingId) {
+    public void cancelBooking(String bookingId) throws Exception {
 
-        Venue venue = venueService.getVenueDetails();
+
         Optional<Booking> booking = bookingRepository.findById(bookingId);
+        if(booking.get().getStatus().equals(Constants.BOOKING_STATUS_CANCELED_BY_ADMIN)||booking.get().getStatus().equals(Constants.BOOKING_STATUS_CANCELED_BY_USER)){
+            throw new Exception("Booking already cancelled");
+        }
 
         LocalDate localDate = LocalDate.parse(booking.get().getDate());
 
+        Availability availabilityByMonth = availabilityRepository.findByYearAndMonth(localDate.getYear(),localDate.getMonthValue());
 
-        if (venue != null) {
-            Optional<Availability.DailyAvailability> data = venue.getAvailability().getDailyAvailability().stream()
+
+        if (availabilityByMonth != null) {
+            Optional<Availability.DailyAvailability> data = availabilityByMonth.getDailyAvailability().stream()
                     .filter(e -> e.getDate().isEqual(localDate))
                     .findFirst();
 
@@ -137,7 +146,7 @@ public class BookingService {
                 }
             });
 
-            venueService.save(venue);
+            availabilityRepository.save(availabilityByMonth);
 
             booking.get().setStatus(Constants.BOOKING_STATUS_CANCELED_BY_ADMIN);
 

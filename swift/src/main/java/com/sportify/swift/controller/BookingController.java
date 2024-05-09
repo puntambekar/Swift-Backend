@@ -28,7 +28,7 @@ public class BookingController {
     }
 
     @PostMapping("/cancel")
-    public ResponseEntity<Void> cancelBooking(@RequestBody String bookingId) {
+    public ResponseEntity<Void> cancelBooking(@RequestBody String bookingId) throws Exception {
         bookingService.cancelBooking(bookingId);
         return ResponseEntity.ok().build();
     }

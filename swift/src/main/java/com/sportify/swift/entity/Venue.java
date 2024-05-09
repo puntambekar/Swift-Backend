@@ -22,7 +22,7 @@ public class Venue {
         private String businessName;
         private String address;
         private String city;
-        private Availability availability;
+
 
 
 
