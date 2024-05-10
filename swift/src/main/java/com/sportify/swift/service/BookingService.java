@@ -4,17 +4,14 @@ import com.sportify.swift.dao.AvailabilityRepository;
 import com.sportify.swift.dao.BookingRepository;
 import com.sportify.swift.entity.Availability;
 import com.sportify.swift.entity.Booking;
-import com.sportify.swift.entity.Venue;
 import com.sportify.swift.requestmodel.BookingRequest;
 import com.sportify.swift.requestmodel.TimeSlot;
 import com.sportify.swift.responsemodel.BookingEventResponse;
 import com.sportify.swift.utils.Constants;
-import com.sportify.swift.utils.DateUtils;
 import com.sportify.swift.utils.EmailUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;

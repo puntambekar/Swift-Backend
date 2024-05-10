@@ -2,7 +2,6 @@ package com.sportify.swift.controller;
 
 import com.sportify.swift.entity.Availability;
 import com.sportify.swift.requestmodel.AvailabilityRequest;
-import com.sportify.swift.requestmodel.BookingRequest;
 import com.sportify.swift.service.AvailabilityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

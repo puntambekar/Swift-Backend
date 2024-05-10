@@ -1,22 +1,13 @@
 package com.sportify.swift.service;
 
-import com.mongodb.client.*;
 import com.sportify.swift.dao.VenueRepository;
 import com.sportify.swift.entity.Availability;
 import com.sportify.swift.entity.Venue;
 import com.sportify.swift.responsemodel.VenueResponse;
-import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class VenueService {
