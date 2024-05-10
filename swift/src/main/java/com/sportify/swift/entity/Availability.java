@@ -40,7 +40,7 @@ public class Availability {
         @AllArgsConstructor
         @NoArgsConstructor
         public static class HourlyAvailability {
-            private Date time;
+            private LocalTime time;
             private int courtAvailable;
         }
     }

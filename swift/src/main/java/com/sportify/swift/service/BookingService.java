@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -52,11 +53,7 @@ public class BookingService {
                 for (TimeSlot timeSlot : bookingRequest.getTimeSlots()) {
                     Optional<Availability.DailyAvailability.HourlyAvailability> hourlyAvailability = dailyAvailability.getHourlyAvailability().stream()
                             .filter(item -> {
-                                try {
-                                    return item.getTime().equals(DateUtils.dateFormatter(timeSlot.getTime()));
-                                } catch (ParseException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                return item.getTime().equals(timeSlot.getTime());
                             })
                             .findFirst();
 
@@ -91,8 +88,8 @@ public class BookingService {
                     BookingEventResponse bookingEventResponse = new BookingEventResponse();
                     bookingEventResponse.setId(booking.getId());
                     bookingEventResponse.setTitle(booking.getUser().getEmail());
-                    bookingEventResponse.setStart(DateUtils.formattedTime(timeSlot.getTime()));
-                    bookingEventResponse.setEnd(DateUtils.formattedTime(timeSlot.getTime()).plusHours(1));
+                    bookingEventResponse.setStart(LocalDate.parse(booking.getDate()).atTime(LocalTime.parse(timeSlot.getTime())));
+                    bookingEventResponse.setEnd(LocalDate.parse(booking.getDate()).atTime(LocalTime.parse(timeSlot.getTime())).plusHours(1));
                     bookingEventResponses.add(bookingEventResponse);
                 }
 
@@ -132,11 +129,7 @@ public class BookingService {
                 for (TimeSlot timeSlot : booking.get().getTimeSlots()) {
                     Optional<Availability.DailyAvailability.HourlyAvailability> hourlyAvailability = dailyAvailability.getHourlyAvailability().stream()
                             .filter(item -> {
-                                try {
-                                    return item.getTime().equals(DateUtils.dateFormatter(timeSlot.getTime()));
-                                } catch (ParseException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                return item.getTime().equals(timeSlot.getTime());
                             })
                             .findFirst();
 

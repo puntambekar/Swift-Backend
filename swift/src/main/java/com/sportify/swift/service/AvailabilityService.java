@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AvailabilityService {
@@ -50,13 +51,13 @@ public class AvailabilityService {
                 for (int hour = weekend_startTime; hour <= weekend_endTime; hour++) {
                     hourlyAvailabilities.add(
                             new Availability.DailyAvailability.HourlyAvailability(
-                                    Date.from(LocalTime.of(hour, 0).atDate(date).atZone(ZoneId.of("America/New_York")).toInstant()), 10));
+                                    LocalTime.of(hour, 0), 10));
                 }
             }else {
                 for (int hour = weekday_startTime; hour <= weekday_endTime; hour++) {
                     hourlyAvailabilities.add(
                             new Availability.DailyAvailability.HourlyAvailability(
-                                    Date.from(LocalTime.of(hour, 0).atDate(date).atZone(ZoneId.of("America/New_York")).toInstant()), 10));
+                                    LocalTime.of(hour, 0), 10));
                 }
             }
 
@@ -96,18 +97,27 @@ public class AvailabilityService {
 
         Optional<Availability.DailyAvailability> data = availability.getDailyAvailability().stream().filter(e -> e.getDate() .isEqual(localDate) ).findFirst();
 
-
-        return data.get().getHourlyAvailability();
+        if(localDate.isEqual(LocalDate.now())){
+            return data.get().getHourlyAvailability().stream().filter(e->e.getTime().isAfter(LocalTime.now())).collect(Collectors.toList());
+        }
+       else return data.get().getHourlyAvailability();
     }
 
     public List<Availability> getAvailabilityDataForThreeMonths() {
 
         LocalDate localDate = LocalDate.now();
+        LocalTime localTime = LocalTime.now();
         int currentYear = localDate.getYear();
        int currentMonth= localDate.getMonthValue();
 
+       Availability availabilityFromNow = availabilityRepository.findByYearAndMonth(currentYear,currentMonth);
+       availabilityFromNow.setDailyAvailability(availabilityFromNow.getDailyAvailability().stream().filter(e->e.getDate().isEqual(localDate)||e.getDate().isAfter(localDate)).collect(Collectors.toList()));
+        if (!availabilityFromNow.getDailyAvailability().isEmpty()) {
+            availabilityFromNow.getDailyAvailability().get(0).setHourlyAvailability(availabilityFromNow.getDailyAvailability().get(0).getHourlyAvailability().stream().filter(e -> e.getTime().isAfter(localTime)).collect(Collectors.toList()));
+        }
+
        List<Availability> availabilities = new ArrayList<>();
-       availabilities.add(availabilityRepository.findByYearAndMonth(currentYear,currentMonth));
+       availabilities.add(availabilityFromNow);
        availabilities.add(availabilityRepository.findByYearAndMonth(currentYear,currentMonth+1));
        availabilities.add(availabilityRepository.findByYearAndMonth(currentYear,currentMonth+2));
        return availabilities;

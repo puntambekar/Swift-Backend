@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 @Data
@@ -12,8 +13,8 @@ import java.time.ZonedDateTime;
 public class BookingEventResponse {
     String id;
     String title;
-    ZonedDateTime start;
-    ZonedDateTime end;
+    LocalDateTime start;
+    LocalDateTime end;
    // int slotsBooked;
    // int slotsEmpty=10;
 }
