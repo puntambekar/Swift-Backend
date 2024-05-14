@@ -85,8 +85,8 @@ public class BookingService {
                     BookingEventResponse bookingEventResponse = new BookingEventResponse();
                     bookingEventResponse.setId(booking.getId());
                     bookingEventResponse.setTitle(booking.getUser().getEmail());
-                    bookingEventResponse.setStart(LocalDate.parse(booking.getDate()).atTime(LocalTime.parse(timeSlot.getTime())));
-                    bookingEventResponse.setEnd(LocalDate.parse(booking.getDate()).atTime(LocalTime.parse(timeSlot.getTime())).plusHours(1));
+                    bookingEventResponse.setStart(LocalDate.parse(booking.getDate()).atTime(timeSlot.getTime()));
+                    bookingEventResponse.setEnd(LocalDate.parse(booking.getDate()).atTime(timeSlot.getTime()).plusHours(1));
                     bookingEventResponses.add(bookingEventResponse);
                 }
 
