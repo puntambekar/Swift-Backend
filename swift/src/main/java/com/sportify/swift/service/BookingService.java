@@ -11,6 +11,7 @@ import com.sportify.swift.utils.Constants;
 import com.sportify.swift.utils.EmailUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -104,7 +105,11 @@ public class BookingService {
         return bookingRepository.findAll();
     }
 
-    public void cancelBooking(String bookingId) throws Exception {
+    public List<Booking> getBookingsByEmail(String email) {
+        return bookingRepository.findByUserEmail(email);
+    }
+
+    public void cancelBooking(String bookingId,boolean isAdmin) throws Exception {
 
 
         Optional<Booking> booking = bookingRepository.findById(bookingId);
@@ -137,8 +142,10 @@ public class BookingService {
             });
 
             availabilityRepository.save(availabilityByMonth);
+            if(isAdmin){
+                booking.get().setStatus(Constants.BOOKING_STATUS_CANCELED_BY_ADMIN);
+                }else  booking.get().setStatus(Constants.BOOKING_STATUS_CANCELED_BY_USER);
 
-            booking.get().setStatus(Constants.BOOKING_STATUS_CANCELED_BY_ADMIN);
 
             bookingRepository.save(booking.get());
 
