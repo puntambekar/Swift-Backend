@@ -67,7 +67,9 @@
 					</excludes>
 				</configuration>
 			</plugin>
+
 		</plugins>
+		<finalName>swift-image-v1</finalName>
 	</build>
 
 </project>
