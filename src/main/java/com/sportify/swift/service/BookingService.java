@@ -1,22 +1,23 @@
 package com.sportify.swift.service;
 
+import com.sportify.swift.dao.AvailabilityRepository;
 import com.sportify.swift.dao.BookingRepository;
 import com.sportify.swift.entity.Availability;
 import com.sportify.swift.entity.Booking;
-import com.sportify.swift.entity.User;
-import com.sportify.swift.entity.Venue;
 import com.sportify.swift.requestmodel.BookingRequest;
 import com.sportify.swift.requestmodel.TimeSlot;
+import com.sportify.swift.responsemodel.BookingEventResponse;
+import com.sportify.swift.utils.Constants;
+import com.sportify.swift.utils.EmailUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestHeader;
 
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.Date;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.TimeZone;
 
 @Service
 public class BookingService {
@@ -28,18 +29,21 @@ public class BookingService {
     VenueService venueService;
 
     @Autowired
-    EmailService emailService;
+    EmailUtils emailUtils;
+
+    @Autowired
+    AvailabilityRepository availabilityRepository;
+
 
     public void addNewBooking(BookingRequest bookingRequest) {
 
         LocalDate localDate = LocalDate.parse(bookingRequest.getDate());
 
+        Availability availabilityByMonth = availabilityRepository.findByYearAndMonth(localDate.getYear(),localDate.getMonthValue());
 
 
-        Venue venue = venueService.getAVenue(bookingRequest.getVenue().getId());
-
-        if (venue != null) {
-            Optional<Availability.DailyAvailability> data = venue.getAvailability().getDailyAvailability().stream()
+        if (availabilityByMonth != null) {
+            Optional<Availability.DailyAvailability> data = availabilityByMonth.getDailyAvailability().stream()
                     .filter(e -> e.getDate().isEqual(localDate))
                     .findFirst();
 
@@ -47,11 +51,7 @@ public class BookingService {
                 for (TimeSlot timeSlot : bookingRequest.getTimeSlots()) {
                     Optional<Availability.DailyAvailability.HourlyAvailability> hourlyAvailability = dailyAvailability.getHourlyAvailability().stream()
                             .filter(item -> {
-                                try {
-                                    return item.getTime().equals(dateFormatter(timeSlot.getTime()));
-                                } catch (ParseException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                return item.getTime().equals(timeSlot.getTime());
                             })
                             .findFirst();
 
@@ -61,7 +61,7 @@ public class BookingService {
                 }
             });
 
-            venueService.save(venue);
+            availabilityRepository.save(availabilityByMonth);
         }
 
         Booking booking = new Booking();
@@ -69,68 +69,90 @@ public class BookingService {
         booking.setTimeSlots(bookingRequest.getTimeSlots());
         booking.setUser(bookingRequest.getUser());
         booking.setVenue(bookingRequest.getVenue());
-
-
-
+        booking.setStatus(Constants.BOOKING_STATUS_ACTIVE);
 
         bookingRepository.save(booking);
-
-        sendEmailToUser(booking);
-
-    }
-
-
-
-    private void sendEmailToUser(Booking booking) {
-
-        String userEmail = booking.getUser().getEmail();
-        String subject = "Your Booking at "+booking.getVenue().getBusinessName();
-        String text = generateConfirmationMessage(booking);
-
-
-        emailService.sendEmail(userEmail,subject,text);
+        emailUtils.sendEmailToUser(booking);
 
     }
-    public String generateConfirmationMessage(Booking booking) {
-        StringBuilder message = new StringBuilder();
-        message.append("Booking Confirmation\n\n");
-        message.append("Booking ID: ").append(booking.getId()).append("\n");
-        message.append("Date: ").append(booking.getDate()).append("\n");
-        message.append("Time Slots:\n");
-        for (TimeSlot slot : booking.getTimeSlots()) {
-            message.append("- ").append(slot.getTime()).append(": ").append(slot.getCourtBooked()).append(" courts\n");
+
+
+    public List<BookingEventResponse> getAllBookingsBySlots() {
+        List<Booking> bookings = bookingRepository.findAll();
+        List<BookingEventResponse> bookingEventResponses = new ArrayList<>();
+        for (Booking booking : bookings) {
+            for (TimeSlot timeSlot : booking.getTimeSlots()) {
+                for (int i = 0; i < Integer.parseInt(timeSlot.getCourtBooked()); i++) {
+                    BookingEventResponse bookingEventResponse = new BookingEventResponse();
+                    bookingEventResponse.setId(booking.getId());
+                    bookingEventResponse.setTitle(booking.getUser().getEmail());
+                    bookingEventResponse.setStart(LocalDate.parse(booking.getDate()).atTime(timeSlot.getTime()));
+                    bookingEventResponse.setEnd(LocalDate.parse(booking.getDate()).atTime(timeSlot.getTime()).plusHours(1));
+                    bookingEventResponses.add(bookingEventResponse);
+                }
+
+                // bookingEventResponse.setSlotsBooked(Integer.parseInt(timeSlot.getCourtBooked()));
+                //    bookingEventResponse.setSlotsEmpty(bookingEventResponse.getSlotsEmpty()-bookingEventResponse.getSlotsBooked());
+
+
+            }
         }
-        message.append("\n");
-        message.append("User Information:\n");
-        message.append("- Name: ").append(booking.getUser().getName()).append("\n");
-        message.append("- Email: ").append(booking.getUser().getEmail()).append("\n");
-        message.append("- Phone: ").append(booking.getUser().getPhone()).append("\n\n");
-        message.append("Venue Information:\n");
-        message.append("- Business Name: ").append(booking.getVenue().getBusinessName()).append("\n");
-        message.append("- Address: ").append(booking.getVenue().getAddress()).append(", ").append(booking.getVenue().getCity()).append("\n");
-        return message.toString();
+        return bookingEventResponses;
     }
 
-    private Date  dateFormatter(String dateString) throws ParseException {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
-
-
-            Date date = dateFormat.parse(dateString);
-
-//            System.out.println("Parsed Date: " + date);
-//
-//            // Get the Eastern Daylight Time (EDT) timezone
-//            TimeZone edtTimeZone = TimeZone.getTimeZone("America/New_York");
-//
-//            // Set the time zone of the date object to EDT
-//            dateFormat.setTimeZone(edtTimeZone);
-//            String edtDate = dateFormat.format(date);
-//
-//            // Print the date in EDT
-//            System.out.println("Date and Time in EDT: " + edtDate);
-
-
-        return date;
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
     }
+
+    public List<Booking> getBookingsByEmail(String email) {
+        return bookingRepository.findByUserEmail(email);
+    }
+
+    public void cancelBooking(String bookingId,boolean isAdmin) throws Exception {
+
+
+        Optional<Booking> booking = bookingRepository.findById(bookingId);
+        if(booking.get().getStatus().equals(Constants.BOOKING_STATUS_CANCELED_BY_ADMIN)||booking.get().getStatus().equals(Constants.BOOKING_STATUS_CANCELED_BY_USER)){
+            throw new Exception("Booking already cancelled");
+        }
+
+        LocalDate localDate = LocalDate.parse(booking.get().getDate());
+
+        Availability availabilityByMonth = availabilityRepository.findByYearAndMonth(localDate.getYear(),localDate.getMonthValue());
+
+
+        if (availabilityByMonth != null) {
+            Optional<Availability.DailyAvailability> data = availabilityByMonth.getDailyAvailability().stream()
+                    .filter(e -> e.getDate().isEqual(localDate))
+                    .findFirst();
+
+            data.ifPresent(dailyAvailability -> {
+                for (TimeSlot timeSlot : booking.get().getTimeSlots()) {
+                    Optional<Availability.DailyAvailability.HourlyAvailability> hourlyAvailability = dailyAvailability.getHourlyAvailability().stream()
+                            .filter(item -> {
+                                return item.getTime().equals(timeSlot.getTime());
+                            })
+                            .findFirst();
+
+                    hourlyAvailability.ifPresent(availability -> {
+                        availability.setCourtAvailable(availability.getCourtAvailable() + Integer.parseInt(timeSlot.getCourtBooked()));
+                    });
+                }
+            });
+
+            availabilityRepository.save(availabilityByMonth);
+            if(isAdmin){
+                booking.get().setStatus(Constants.BOOKING_STATUS_CANCELED_BY_ADMIN);
+                }else  booking.get().setStatus(Constants.BOOKING_STATUS_CANCELED_BY_USER);
+
+
+            bookingRepository.save(booking.get());
+
+            emailUtils.sendEmailToUser(booking.get());
+
+
+        }
+    }
+
 }

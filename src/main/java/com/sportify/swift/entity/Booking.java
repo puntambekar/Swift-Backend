@@ -8,7 +8,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Document(collection ="booking" )
@@ -21,4 +20,5 @@ public class Booking {
     private List<TimeSlot> timeSlots;
     private User user;
     private Venue venue;
+    private String status;
 }
